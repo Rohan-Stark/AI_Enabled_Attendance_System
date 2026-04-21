@@ -1,0 +1,57 @@
+# ── Python ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual Environment ────────────────────────────
+venv/
+.venv/
+env/
+
+# ── Environment Variables ──────────────────────────
+.env
+
+# ── IDE & OS ───────────────────────────────────────
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Database ───────────────────────────────────────
+instance/
+*.db
+*.sqlite3
+
+# ── Logs ───────────────────────────────────────────
+logs/
+*.log
+
+# ── Exported Data ──────────────────────────────────
+exports/
+*.xlsx
+*.csv
+
+# ── User Uploads & Captures ────────────────────────
+data/known_faces/
+app/static/captures/
+*.jpg
+*.jpeg
+*.png
+!app/static/images/
+!app/static/img/
+
+# ── Pre-trained Models ─────────────────────────────
+data/shape_predictor_68_face_landmarks.dat
+*.dat
+
+# ── Misc ───────────────────────────────────────────
+node_modules/

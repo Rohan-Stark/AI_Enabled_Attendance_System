@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% block title %}Admin Control Panel — SmartAttend{% endblock %}
+
+{% block head %}
+<style>
+/* ── Admin Theme: Purple/Violet ── */
+:root {
+    --role-primary: #8b5cf6;
+    --role-primary-light: #a78bfa;
+    --role-primary-glow: rgba(139, 92, 246, 0.25);
+    --role-gradient: linear-gradient(135deg, #7c3aed, #8b5cf6, #a78bfa);
+}
+
+.admin-hero-header {
+    background: linear-gradient(135deg, rgba(109, 40, 217, 0.15), rgba(139, 92, 246, 0.08));
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.admin-hero-header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(139,92,246,0.15), transparent 70%);
+    pointer-events: none;
+}
+.hero-title { font-size: 1.75rem; font-weight: 800; }
+.hero-title span { 
+    background: var(--role-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.hero-subtitle { color: var(--text-muted); margin-top: 4px; }
+.hero-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--role-gradient);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; color: white;
+    box-shadow: 0 0 30px var(--role-primary-glow);
+    flex-shrink: 0;
+}
+
+/* ── Metric Cards ── */
+.metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.metric-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid var(--glass-border);
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+    cursor: default;
+}
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+.metric-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 16px 16px;
+}
+.mc-violet::after { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.mc-blue::after { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.mc-teal::after { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
+.mc-amber::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+.metric-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+.mc-violet .metric-icon { background: rgba(139,92,246,0.15); color: #a78bfa; }
+.mc-blue .metric-icon { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.mc-teal .metric-icon { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+.mc-amber .metric-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.metric-value { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+.metric-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+
+/* ── Management Panels  ── */
+.mgmt-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+.mgmt-panel {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+}
+.mgmt-panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(139,92,246,0.05);
+}
+.mgmt-panel-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+}
+.mgmt-panel-header i { color: var(--role-primary-light); font-size: 1rem; }
+.mgmt-panel-body { padding: 1.25rem 1.5rem; }
+
+.add-form { margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--glass-border); }
+.add-form .btn-add {
+    width: 100%;
+    background: linear-gradient(135deg, var(--role-primary), #7c3aed);
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.75rem;
+    transition: var(--transition);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.add-form .btn-add:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.user-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.user-list::-webkit-scrollbar { width: 4px; }
+.user-list::-webkit-scrollbar-track { background: transparent; }
+.user-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+.user-item:hover {
+    border-color: var(--glass-border);
+    background: rgba(255,255,255,0.06);
+}
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar-sm {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+}
+.av-teacher { background: rgba(6,182,212,0.15); color: #22d3ee; }
+.av-student { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.av-subject { background: rgba(139,92,246,0.15); color: #a78bfa; }
+
+.user-name { font-size: 0.85rem; font-weight: 600; }
+.user-meta { font-size: 0.72rem; color: var(--text-muted); }
+
+.btn-delete {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: var(--transition);
+}
+.btn-delete:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.face-badge {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+}
+.face-ok { background: var(--success-bg); color: var(--success); }
+.face-missing { background: var(--danger-bg); color: var(--danger); }
+
+.sem-badge {
+    font-size: 0.68rem;
+    background: rgba(139,92,246,0.15);
+    color: var(--role-primary-light);
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+@media (max-width: 1100px) { .mgmt-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) { .metrics-row { grid-template-columns: repeat(2,1fr); } .mgmt-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+
+    <!-- ── Hero Header ── -->
+    <div class="admin-hero-header">
+        <div>
+            <div class="hero-title"><span>Admin Control Panel</span></div>
+            <div class="hero-subtitle">Welcome back, {{ current_user.name }} &mdash; Manage your institution's data</div>
+        </div>
+        <div class="hero-avatar"><i class="fas fa-user-shield"></i></div>
+    </div>
+
+    <!-- ── Metric Cards ── -->
+    <div class="metrics-row">
+        <div class="metric-card mc-violet">
+            <div class="metric-icon"><i class="fas fa-user-graduate"></i></div>
+            <div class="metric-value">{{ stats.students }}</div>
+            <div class="metric-label">Total Students</div>
+        </div>
+        <div class="metric-card mc-blue">
+            <div class="metric-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div class="metric-value">{{ stats.teachers }}</div>
+            <div class="metric-label">Total Teachers</div>
+        </div>
+        <div class="metric-card mc-teal">
+            <div class="metric-icon"><i class="fas fa-book-open"></i></div>
+            <div class="metric-value">{{ stats.subjects }}</div>
+            <div class="metric-label">Active Subjects</div>
+        </div>
+        <div class="metric-card mc-amber">
+            <div class="metric-icon"><i class="fas fa-clipboard-check"></i></div>
+            <div class="metric-value">{{ stats.attendance_records }}</div>
+            <div class="metric-label">Attendance Records</div>
+        </div>
+    </div>
+
+    <!-- ── Management Panels ── -->
+    <div class="mgmt-grid">
+
+        <!-- Teachers Panel -->
+        <div class="mgmt-panel">
+            <div class="mgmt-panel-header">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <h3>Teachers</h3>
+            </div>
+            <div class="mgmt-panel-body">
+                <form method="POST" action="{{ url_for('admin.add_teacher') }}" class="add-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" required placeholder="Dr. Sharma">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" required placeholder="teacher@edu.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Add Teacher</button>
+                </form>
+                <div class="user-list">
+                    {% for t in teachers %}
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-avatar-sm av-teacher">{{ t.name[0] }}</div>
+                            <div>
+                                <div class="user-name">{{ t.name }}</div>
+                                <div class="user-meta">{{ t.email }}</div>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ url_for('admin.delete_teacher', teacher_id=t.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn-delete" onclick="return confirm('Delete {{ t.name }}?')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <p style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:1rem">No teachers yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Panel -->
+        <div class="mgmt-panel">
+            <div class="mgmt-panel-header">
+                <i class="fas fa-user-graduate"></i>
+                <h3>Students</h3>
+            </div>
+            <div class="mgmt-panel-body">
+                <form method="POST" action="{{ url_for('admin.add_student') }}" enctype="multipart/form-data" class="add-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="name" required placeholder="Rohan Kumar">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" required placeholder="student@edu.com">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Enrollment No</label>
+                            <input type="text" name="enrollment_no" required placeholder="EN2024001">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Semester</label>
+                            <select name="semester" class="select-input">
+                                {% for i in range(1, 9) %}<option value="{{ i }}">Sem {{ i }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-camera"></i> Face Photo</label>
+                            <input type="file" name="face_image" accept="image/*" class="file-input">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Register Student</button>
+                </form>
+                <div class="user-list">
+                    {% for s in students %}
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-avatar-sm av-student">{{ s.name[0] }}</div>
+                            <div>
+                                <div class="user-name">{{ s.name }} <span class="sem-badge">Sem {{ s.semester }}</span></div>
+                                <div class="user-meta">{{ s.enrollment_no }}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <div class="face-badge {% if s.face_encoding_blob %}face-ok{% else %}face-missing{% endif %}">
+                                <i class="fas {% if s.face_encoding_blob %}fa-check{% else %}fa-times{% endif %}"></i>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin.delete_student', student_id=s.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn-delete" onclick="return confirm('Delete {{ s.name }} and all records?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:1rem">No students yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Subjects Panel -->
+        <div class="mgmt-panel">
+            <div class="mgmt-panel-header">
+                <i class="fas fa-book-open"></i>
+                <h3>Subjects</h3>
+            </div>
+            <div class="mgmt-panel-body">
+                <form method="POST" action="{{ url_for('admin.add_subject') }}" class="add-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Subject Name</label>
+                            <input type="text" name="name" required placeholder="Data Structures">
+                        </div>
+                        <div class="form-group">
+                            <label>Code</label>
+                            <input type="text" name="code" required placeholder="CS201">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Semester</label>
+                            <select name="semester" class="select-input">
+                                {% for i in range(1, 9) %}<option value="{{ i }}">Sem {{ i }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign Teacher</label>
+                            <select name="teacher_id" class="select-input" required>
+                                <option value="">Select...</option>
+                                {% for t in teachers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-add"><i class="fas fa-plus"></i> Add Subject</button>
+                </form>
+                <div class="user-list">
+                    {% for s in subjects %}
+                    <div class="user-item">
+                        <div class="user-info">
+                            <div class="user-avatar-sm av-subject"><i class="fas fa-book" style="font-size:0.7rem"></i></div>
+                            <div>
+                                <div class="user-name">{{ s.name }} <span class="sem-badge">Sem {{ s.semester }}</span></div>
+                                <div class="user-meta"><code style="font-size:0.68rem;color:var(--role-primary-light)">{{ s.code }}</code> &bull; {{ s.teacher.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="color:var(--text-muted);font-size:0.85rem;text-align:center;padding:1rem">No subjects yet</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

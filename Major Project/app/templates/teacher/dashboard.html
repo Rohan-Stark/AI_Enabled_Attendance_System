@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+{% block title %}Teacher Dashboard — SmartAttend{% endblock %}
+
+{% block head %}
+<style>
+/* ── Teacher Theme: Cyan/Teal ── */
+:root {
+    --role-primary: #06b6d4;
+    --role-primary-light: #22d3ee;
+    --role-primary-glow: rgba(6, 182, 212, 0.25);
+    --role-gradient: linear-gradient(135deg, #0891b2, #06b6d4, #22d3ee);
+}
+
+.teacher-hero {
+    background: linear-gradient(135deg, rgba(8, 145, 178, 0.12), rgba(6, 182, 212, 0.06));
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: 20px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.teacher-hero-left { display: flex; align-items: center; gap: 1.25rem; }
+.teacher-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--role-gradient);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; color: white;
+    box-shadow: 0 0 24px var(--role-primary-glow); flex-shrink: 0;
+}
+.teacher-title { font-size: 1.5rem; font-weight: 800; }
+.teacher-title span {
+    background: var(--role-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.teacher-sub { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Active session banner */
+.session-live-banner {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08));
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.15); }
+    50% { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+}
+.session-live-left { display: flex; align-items: center; gap: 14px; }
+.live-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--success); flex-shrink: 0;
+    animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.live-text { font-weight: 700; color: var(--success); font-size: 0.95rem; }
+.live-sub { font-size: 0.82rem; color: var(--text-muted); }
+.btn-go-session {
+    background: var(--success);
+    color: white; border: none;
+    padding: 9px 18px; border-radius: 9px;
+    font-weight: 600; font-size: 0.85rem;
+    cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: var(--transition); white-space: nowrap;
+}
+.btn-go-session:hover { opacity: 0.85; transform: translateY(-1px); }
+
+/* Semester filter */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.75rem;
+}
+.filter-bar label { font-size: 0.85rem; color: var(--text-muted); }
+.filter-bar select {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.filter-bar select:focus { border-color: var(--role-primary); outline: none; }
+
+/* Subject cards */
+.subject-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 1.25rem;
+}
+
+.t-subject-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    transition: var(--transition);
+}
+.t-subject-card:hover {
+    border-color: rgba(6,182,212,0.25);
+    box-shadow: 0 4px 24px rgba(6,182,212,0.08);
+    transform: translateY(-2px);
+}
+
+.t-card-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    background: rgba(6,182,212,0.04);
+}
+.t-card-icon {
+    width: 42px; height: 42px;
+    background: rgba(6,182,212,0.12);
+    color: #22d3ee;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.t-card-title { font-size: 1rem; font-weight: 700; }
+.t-card-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.tag {
+    font-size: 0.68rem; font-weight: 600;
+    padding: 2px 8px; border-radius: 20px;
+}
+.tag-code { background: rgba(6,182,212,0.12); color: #22d3ee; }
+.tag-sem { background: rgba(255,255,255,0.07); color: var(--text-muted); }
+
+.avg-pct {
+    font-size: 1.4rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+.pct-green { color: var(--success); }
+.pct-yellow { color: var(--warning); }
+.pct-red { color: var(--danger); }
+
+/* Stats row inside card */
+.t-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+.t-stat-cell {
+    padding: 1rem 1.25rem;
+    text-align: center;
+    border-right: 1px solid var(--glass-border);
+}
+.t-stat-cell:last-child { border-right: none; }
+.t-stat-val { font-size: 1.4rem; font-weight: 700; display: block; }
+.t-stat-lbl { font-size: 0.72rem; color: var(--text-muted); }
+
+/* Student mini list */
+.student-mini-list { padding: 1rem 1.5rem; }
+.student-mini-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.82rem;
+}
+.student-mini-row:last-child { border-bottom: none; }
+.student-mini-name { color: var(--text-primary); font-weight: 500; }
+.student-mini-enroll { color: var(--text-muted); font-size: 0.72rem; }
+
+.mini-progress-wrap { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+.mini-bar {
+    flex: 1; height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden;
+}
+.mini-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.6s ease;
+}
+.fill-g { background: var(--success); }
+.fill-y { background: var(--warning); }
+.fill-r { background: var(--danger); }
+.mini-pct { font-weight: 700; font-size: 0.78rem; min-width: 36px; text-align: right; }
+
+/* Card action bar */
+.t-card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.1);
+    flex-wrap: wrap;
+}
+.btn-start {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    color: white; border: none;
+    padding: 8px 16px; border-radius: 8px;
+    font-weight: 600; font-size: 0.82rem;
+    cursor: pointer; transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-start:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6,182,212,0.3); }
+.btn-export, .btn-alert {
+    padding: 8px 14px; border-radius: 8px;
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none;
+}
+.btn-export {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+}
+.btn-export:hover { border-color: #22d3ee; color: #22d3ee; }
+.btn-alert {
+    background: transparent;
+    border: 1px solid rgba(245,158,11,0.25);
+    color: var(--warning);
+}
+.btn-alert:hover { background: var(--warning-bg); }
+
+.empty-subjects {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+.empty-subjects i { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block; }
+.empty-subjects h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+
+@media(max-width:700px){.subject-cards-grid{grid-template-columns:1fr;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+
+    <!-- ── Hero ── -->
+    <div class="teacher-hero">
+        <div class="teacher-hero-left">
+            <div class="teacher-avatar"><i class="fas fa-chalkboard-teacher"></i></div>
+            <div>
+                <div class="teacher-title">Welcome, <span>{{ current_user.name }}</span></div>
+                <div class="teacher-sub">Teacher Dashboard &mdash; Manage & track attendance sessions</div>
+            </div>
+        </div>
+        <form method="GET" class="filter-bar" style="margin:0">
+            <label><i class="fas fa-filter"></i> Filter:</label>
+            <select name="semester" onchange="this.form.submit()">
+                <option value="">All Semesters</option>
+                {% for sem in semesters %}
+                <option value="{{ sem }}" {% if selected_semester == sem %}selected{% endif %}>Semester {{ sem }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- ── Live Session Banner ── -->
+    {% if active_session %}
+    <div class="session-live-banner">
+        <div class="session-live-left">
+            <div class="live-dot"></div>
+            <div>
+                <div class="live-text">{{ active_session.subject_name }} &mdash; Session Active</div>
+                <div class="live-sub">{{ active_session.session_id }} &bull; {{ active_session.marked | length }} students marked so far</div>
+            </div>
+        </div>
+        <a href="{{ url_for('teacher.session_page') }}" class="btn-go-session">
+            <i class="fas fa-video"></i> Open Session
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- ── Subject Cards ── -->
+    {% if subject_data %}
+    <div class="subject-cards-grid">
+        {% for item in subject_data %}
+        {% set avg_pct = (item.summary | map(attribute='percentage') | list | sum) / (item.summary | length) if item.summary else 0 %}
+        {% set low_count = item.summary | selectattr('percentage', 'lt', 75) | list | length %}
+
+        <div class="t-subject-card">
+            <!-- Header -->
+            <div class="t-card-header">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div class="t-card-icon"><i class="fas fa-book"></i></div>
+                    <div>
+                        <div class="t-card-title">{{ item.subject.name }}</div>
+                        <div class="t-card-meta">
+                            <span class="tag tag-code">{{ item.subject.code }}</span>
+                            <span class="tag tag-sem">Semester {{ item.subject.semester }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="avg-pct {% if avg_pct >= 75 %}pct-green{% elif avg_pct >= 50 %}pct-yellow{% else %}pct-red{% endif %}">
+                    {{ "%.0f"|format(avg_pct) }}%
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="t-stats-row">
+                <div class="t-stat-cell">
+                    <span class="t-stat-val">{{ item.summary | length }}</span>
+                    <span class="t-stat-lbl">Students</span>
+                </div>
+                <div class="t-stat-cell">
+                    <span class="t-stat-val" style="color:var(--success)">{{ item.summary | length - low_count }}</span>
+                    <span class="t-stat-lbl">Above 75%</span>
+                </div>
+                <div class="t-stat-cell">
+                    <span class="t-stat-val {% if low_count > 0 %}pct-red{% endif %}">{{ low_count }}</span>
+                    <span class="t-stat-lbl">Below 75%</span>
+                </div>
+            </div>
+
+            <!-- Student Mini List -->
+            {% if item.summary %}
+            <div class="student-mini-list">
+                {% for s in item.summary[:5] %}
+                <div class="student-mini-row">
+                    <div>
+                        <div class="student-mini-name">{{ s.name }}</div>
+                        <div class="student-mini-enroll">{{ s.enrollment_no }}</div>
+                    </div>
+                    <div class="mini-progress-wrap">
+                        <div class="mini-bar">
+                            <div class="mini-bar-fill {% if s.percentage >= 75 %}fill-g{% elif s.percentage >= 50 %}fill-y{% else %}fill-r{% endif %}"
+                                 style="width:{{ s.percentage }}%"></div>
+                        </div>
+                        <span class="mini-pct {% if s.percentage >= 75 %}pct-green{% elif s.percentage >= 50 %}pct-yellow{% else %}pct-red{% endif %}">
+                            {{ s.percentage }}%
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if item.summary | length > 5 %}
+                <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding-top:8px">
+                    +{{ item.summary | length - 5 }} more students
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div style="padding:1.5rem;text-align:center;color:var(--text-muted);font-size:0.85rem">
+                <i class="fas fa-inbox" style="margin-bottom:6px;display:block"></i> No session data yet
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="t-card-actions">
+                {% if not active_session %}
+                <form method="POST" action="{{ url_for('teacher.start_session') }}" style="margin:0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="subject_id" value="{{ item.subject.id }}">
+                    <button type="submit" class="btn-start">
+                        <i class="fas fa-play"></i> Start Session
+                    </button>
+                </form>
+                {% endif %}
+                <a href="{{ url_for('teacher.export', subject_id=item.subject.id) }}" class="btn-export">
+                    <i class="fas fa-file-excel"></i> Export
+                </a>
+                <form method="POST" action="{{ url_for('teacher.send_alerts', subject_id=item.subject.id) }}" style="margin:0">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-alert"><i class="fas fa-bell"></i> Alerts</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-subjects">
+        <i class="fas fa-book-open"></i>
+        <h3>No Subjects Assigned</h3>
+        <p>Ask the admin to assign subjects to your account.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

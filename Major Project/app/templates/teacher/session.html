@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Attendance Session — SmartAttend{% endblock %}
+
+{% block content %}
+<div class="session-page">
+    <div class="page-header">
+        <div>
+            <h1><i class="fas fa-video pulse-icon"></i> Live Attendance Session</h1>
+            <p class="page-subtitle">{{ session.subject_name }} — {{ session.session_id }}</p>
+        </div>
+        <div class="header-actions">
+            <form method="POST" action="{{ url_for('teacher.stop_session') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Stop this session?')">
+                    <i class="fas fa-stop"></i> End Session
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="session-layout">
+        <!-- Video Feed -->
+        <div class="video-panel">
+            <div class="video-wrapper">
+                <img id="videoFeed" src="{{ url_for('teacher.video_feed') }}" alt="Webcam Feed" class="video-feed">
+                <div class="video-overlay">
+                    <span class="live-badge"><i class="fas fa-circle pulse-dot"></i> LIVE</span>
+                </div>
+            </div>
+            <div class="video-info">
+                <div class="info-item">
+                    <i class="fas fa-users"></i>
+                    <span>Marked: <strong id="markedCount">{{ session.marked | length }}</strong></span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Session: <strong id="sessionTimer">00:00</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marked Students Panel -->
+        <div class="students-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-user-check"></i> Present Students</h3>
+                <span class="badge badge-success" id="totalBadge">{{ marked_students | length }}</span>
+            </div>
+            <div class="students-list" id="studentsList">
+                {% for s in marked_students %}
+                <div class="student-item" data-student-id="{{ s.student_id }}">
+                    <div class="student-avatar">
+                        {% if s.capture_path %}
+                        <img src="{{ url_for('static', filename=s.capture_path) }}" alt="{{ s.name }}">
+                        {% else %}
+                        <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="student-info">
+                        <strong>{{ s.name }}</strong>
+                        <small>{{ s.enrollment_no }} — {{ s.timestamp }}</small>
+                    </div>
+                    <div class="student-status">
+                        {% if s.verified %}
+                        <span class="badge badge-success"><i class="fas fa-check"></i></span>
+                        {% else %}
+                        <span class="badge badge-warning"><i class="fas fa-question"></i></span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if not marked_students %}
+                <div class="empty-state" id="emptyState">
+                    <i class="fas fa-camera"></i>
+                    <p>Waiting for students to appear in front of camera...</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Poll for session updates every 3 seconds
+const pollInterval = 3000;
+let sessionStart = Date.now();
+
+function updateSessionData() {
+    fetch('{{ url_for("teacher.session_data") }}')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.active) {
+                window.location.href = '{{ url_for("teacher.dashboard") }}';
+                return;
+            }
+            document.getElementById('markedCount').textContent = data.marked_count;
+            document.getElementById('totalBadge').textContent = data.students.length;
+
+            const list = document.getElementById('studentsList');
+            const empty = document.getElementById('emptyState');
+            if (empty && data.students.length > 0) empty.remove();
+
+            // Add new students
+            data.students.forEach(s => {
+                if (!document.querySelector(`[data-student-id="${s.student_id}"]`)) {
+                    const div = document.createElement('div');
+                    div.className = 'student-item slide-in';
+                    div.dataset.studentId = s.student_id;
+                    div.innerHTML = `
+                        <div class="student-avatar">
+                            ${s.capture_path
+                                ? `<img src="/static/${s.capture_path}" alt="${s.name}">`
+                                : '<i class="fas fa-user"></i>'}
+                        </div>
+                        <div class="student-info">
+                            <strong>${s.name}</strong>
+                            <small>${s.enrollment_no} — ${s.timestamp}</small>
+                        </div>
+                        <div class="student-status">
+                            <span class="badge badge-success"><i class="fas fa-check"></i></span>
+                        </div>
+                    `;
+                    list.prepend(div);
+                }
+            });
+        })
+        .catch(() => {});
+}
+
+// Session timer
+function updateTimer() {
+    const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+    const min = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const sec = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('sessionTimer').textContent = `${min}:${sec}`;
+}
+
+setInterval(updateSessionData, pollInterval);
+setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

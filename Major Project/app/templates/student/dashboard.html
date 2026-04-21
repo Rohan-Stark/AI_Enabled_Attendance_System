@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% block title %}My Attendance — SmartAttend{% endblock %}
+
+{% block head %}
+<style>
+/* ── Student Theme: Amber/Gold ── */
+:root {
+    --role-primary: #f59e0b;
+    --role-primary-light: #fbbf24;
+    --role-primary-glow: rgba(245, 158, 11, 0.25);
+    --role-gradient: linear-gradient(135deg, #d97706, #f59e0b, #fbbf24);
+}
+
+/* Hero Section */
+.student-hero {
+    background: linear-gradient(135deg, rgba(217,119,6,0.12), rgba(245,158,11,0.06));
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+}
+.student-hero::after {
+    content: '\f19d';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    right: -20px; top: -20px;
+    font-size: 8rem;
+    color: rgba(245,158,11,0.04);
+    pointer-events: none;
+}
+.student-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--role-gradient);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; font-weight: 800; color: white;
+    box-shadow: 0 0 30px var(--role-primary-glow);
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+}
+.student-hero-info { position: relative; z-index: 1; }
+.student-greeting {
+    font-size: 0.85rem;
+    color: var(--role-primary-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+.student-name { font-size: 1.75rem; font-weight: 800; }
+.student-meta { color: var(--text-muted); font-size: 0.88rem; margin-top: 4px; }
+.student-meta code {
+    background: rgba(245,158,11,0.12);
+    color: var(--role-primary-light);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+}
+
+/* Low attendance alert */
+.low-att-alert {
+    background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.06));
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.alert-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--danger-bg);
+    color: var(--danger);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+}
+.alert-text strong { color: var(--danger); font-size: 0.95rem; }
+.alert-text p { color: var(--text-muted); font-size: 0.82rem; margin-top: 2px; }
+
+/* Overall stats ── using donut chart design */
+.overall-stats-bar {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+/* Big donut */
+.big-donut-wrap {
+    position: relative;
+    width: 130px; height: 130px;
+    flex-shrink: 0;
+}
+.big-donut-wrap svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+.big-donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+}
+.big-donut-pct { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.big-donut-lbl { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; }
+
+.circle-track { fill: none; stroke: rgba(255,255,255,0.07); stroke-width: 3.5; }
+.circle-fill { fill: none; stroke-width: 3.5; stroke-linecap: round; transition: stroke-dasharray 0.8s ease; }
+.fill-amber { stroke: #f59e0b; }
+.fill-green { stroke: #10b981; }
+.fill-red { stroke: #ef4444; }
+
+.overall-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: var(--transition);
+}
+.overall-stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.osc-val { font-size: 2rem; font-weight: 800; display: block; line-height: 1; }
+.osc-lbl { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+.osc-amber { color: var(--role-primary-light); }
+.osc-green { color: var(--success); }
+.osc-blue  { color: #60a5fa; }
+
+/* Semester filter */
+.sem-filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.section-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-heading i { color: var(--role-primary); }
+
+/* Subject cards */
+.s-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.s-subject-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    transition: var(--transition);
+}
+.s-subject-card:hover {
+    border-color: rgba(245,158,11,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(245,158,11,0.07);
+}
+
+.s-card-top {
+    padding: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px solid var(--glass-border);
+}
+.s-card-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: rgba(245,158,11,0.12);
+    color: var(--role-primary-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.s-card-title { font-size: 0.95rem; font-weight: 700; }
+.s-card-code {
+    font-size: 0.7rem;
+    background: rgba(245,158,11,0.1);
+    color: var(--role-primary-light);
+    padding: 2px 7px; border-radius: 20px;
+    font-weight: 600; margin-top: 4px; display: inline-block;
+}
+
+/* Donut + stats inside card */
+.s-card-body {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.s-donut-wrap {
+    position: relative;
+    width: 90px; height: 90px; flex-shrink: 0;
+}
+.s-donut-wrap svg { width: 90px; height: 90px; transform: rotate(-90deg); }
+.s-donut-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+}
+.s-donut-pct { font-size: 1.1rem; font-weight: 800; line-height: 1; }
+.s-donut-lbl { font-size: 0.6rem; color: var(--text-muted); }
+
+.s-card-stats { flex: 1; }
+.s-stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.82rem;
+}
+.s-stat-row:last-child { border-bottom: none; }
+.s-stat-label { color: var(--text-muted); }
+.s-stat-val { font-weight: 700; }
+
+/* History list */
+.s-history {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--glass-border);
+    background: rgba(0,0,0,0.1);
+}
+.s-history-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.history-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.h-chip {
+    font-size: 0.68rem; padding: 3px 9px; border-radius: 20px; font-weight: 600;
+}
+.h-chip-present { background: var(--success-bg); color: var(--success); }
+.h-chip-absent { background: var(--danger-bg); color: var(--danger); }
+
+.empty-state-student {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+.empty-state-student i { font-size: 3rem; opacity: 0.3; margin-bottom: 1rem; display: block; }
+
+@media(max-width:900px){ .overall-stats-bar { grid-template-columns: 1fr 1fr; } .big-donut-wrap { display: none; } }
+@media(max-width:600px){ .s-cards-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+
+    <!-- ── Hero ── -->
+    <div class="student-hero">
+        <div class="student-avatar">{{ current_user.name[0] }}</div>
+        <div class="student-hero-info">
+            <div class="student-greeting"><i class="fas fa-sun"></i> &nbsp;Good day!</div>
+            <div class="student-name">{{ current_user.name }}</div>
+            <div class="student-meta">
+                <code>{{ current_user.enrollment_no }}</code>
+                &bull; Semester {{ current_user.semester }}
+                &bull; Student Dashboard
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Low Attendance Warning ── -->
+    {% if overall.percentage < 75 and overall.total_sessions > 0 %}
+    <div class="low-att-alert">
+        <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="alert-text">
+            <strong>Attendance Warning — {{ overall.percentage }}%</strong>
+            <p>Your attendance is below the required 75% threshold. Please attend classes regularly to avoid academic consequences.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Overall Stats ── -->
+    <div class="overall-stats-bar">
+        <!-- Big Donut -->
+        <div class="big-donut-wrap">
+            <svg viewBox="0 0 36 36">
+                <circle class="circle-track" cx="18" cy="18" r="15.9"/>
+                <circle class="circle-fill {% if overall.percentage >= 75 %}fill-green{% elif overall.percentage >= 50 %}fill-amber{% else %}fill-red{% endif %}"
+                        cx="18" cy="18" r="15.9"
+                        stroke-dasharray="{{ overall.percentage }}, 100"/>
+            </svg>
+            <div class="big-donut-center">
+                <div class="big-donut-pct {% if overall.percentage >= 75 %}osc-green{% elif overall.percentage >= 50 %}osc-amber{% else %}pct-red{% endif %}">
+                    {{ overall.percentage }}%
+                </div>
+                <div class="big-donut-lbl">Overall</div>
+            </div>
+        </div>
+
+        <div class="overall-stat-card">
+            <span class="osc-val osc-green">{{ overall.present_count }}</span>
+            <div class="osc-lbl"><i class="fas fa-calendar-check"></i> Classes Attended</div>
+        </div>
+        <div class="overall-stat-card">
+            <span class="osc-val osc-blue">{{ overall.total_sessions }}</span>
+            <div class="osc-lbl"><i class="fas fa-calendar-alt"></i> Total Sessions</div>
+        </div>
+        <div class="overall-stat-card">
+            <span class="osc-val osc-amber">{{ subject_stats | length }}</span>
+            <div class="osc-lbl"><i class="fas fa-book"></i> Subjects</div>
+        </div>
+    </div>
+
+    <!-- ── Subject Breakdown ── -->
+    <div class="sem-filter-row">
+        <div class="section-heading">
+            <i class="fas fa-book-open"></i> Subject-wise Attendance
+        </div>
+        <form method="GET">
+            <select name="semester" onchange="this.form.submit()" class="select-input" style="min-width:160px">
+                {% for sem in semesters %}
+                <option value="{{ sem }}" {% if selected_semester == sem %}selected{% endif %}>Semester {{ sem }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if subject_stats %}
+    <div class="s-cards-grid">
+        {% for item in subject_stats %}
+        {% set pct = item.stats.percentage %}
+        {% set absent = item.stats.total_sessions - item.stats.present_count %}
+
+        <div class="s-subject-card">
+            <!-- Top -->
+            <div class="s-card-top">
+                <div class="s-card-icon"><i class="fas fa-book"></i></div>
+                <div>
+                    <div class="s-card-title">{{ item.subject.name }}</div>
+                    <span class="s-card-code">{{ item.subject.code }}</span>
+                </div>
+            </div>
+
+            <!-- Body: donut + stats -->
+            <div class="s-card-body">
+                <div class="s-donut-wrap">
+                    <svg viewBox="0 0 36 36">
+                        <circle class="circle-track" cx="18" cy="18" r="15.9"/>
+                        <circle class="circle-fill {% if pct >= 75 %}fill-green{% elif pct >= 50 %}fill-amber{% else %}fill-red{% endif %}"
+                                cx="18" cy="18" r="15.9"
+                                stroke-dasharray="{{ pct }}, 100"/>
+                    </svg>
+                    <div class="s-donut-center">
+                        <div class="s-donut-pct {% if pct >= 75 %}osc-green{% elif pct >= 50 %}osc-amber{% else %}pct-red{% endif %}">{{ pct }}%</div>
+                        <div class="s-donut-lbl">attend.</div>
+                    </div>
+                </div>
+                <div class="s-card-stats">
+                    <div class="s-stat-row">
+                        <span class="s-stat-label">Present</span>
+                        <span class="s-stat-val" style="color:var(--success)">{{ item.stats.present_count }}</span>
+                    </div>
+                    <div class="s-stat-row">
+                        <span class="s-stat-label">Absent</span>
+                        <span class="s-stat-val" style="color:var(--danger)">{{ absent }}</span>
+                    </div>
+                    <div class="s-stat-row">
+                        <span class="s-stat-label">Total Classes</span>
+                        <span class="s-stat-val">{{ item.stats.total_sessions }}</span>
+                    </div>
+                    <div class="s-stat-row">
+                        <span class="s-stat-label">Status</span>
+                        <span class="s-stat-val">
+                            {% if pct >= 75 %}
+                            <span style="color:var(--success);font-size:0.78rem"><i class="fas fa-check-circle"></i> Good</span>
+                            {% elif pct >= 50 %}
+                            <span style="color:var(--warning);font-size:0.78rem"><i class="fas fa-exclamation-circle"></i> At Risk</span>
+                            {% else %}
+                            <span style="color:var(--danger);font-size:0.78rem"><i class="fas fa-times-circle"></i> Critical</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History chips -->
+            {% if item.stats.records %}
+            <div class="s-history">
+                <div class="s-history-title">Recent Sessions</div>
+                <div class="history-chips">
+                    {% for rec in item.stats.records[:8] %}
+                    <span class="h-chip {% if rec.status == 'present' %}h-chip-present{% else %}h-chip-absent{% endif %}">
+                        {{ rec.timestamp[:10] }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state-student">
+        <i class="fas fa-book-open"></i>
+        <h3>No Subjects Found</h3>
+        <p>No subjects are assigned to Semester {{ selected_semester }}.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
